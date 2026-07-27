@@ -39,6 +39,8 @@ enum InterviewStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+  NO_SHOW
+  RESCHEDULED
 }
 
 model User {
@@ -217,19 +219,41 @@ model Application {
   @@index([appliedAt])
 }
 
+enum InterviewType {
+  ONLINE
+  ONSITE
+  PHONE
+}
+
 model Interview {
   id String @id @default(cuid())
 
   applicationId String      @unique
   application   Application @relation(fields: [applicationId], references: [id])
 
+  interviewType InterviewType @default(ONLINE)
+
   scheduledAt DateTime
+
+  durationMinutes Int @default(30)
+
+  timezone String @default("Asia/Kolkata")
 
   meetingLink String?
 
   notes String?
 
   status InterviewStatus @default(SCHEDULED)
+
+  cancelReason String?
+
+  completedAt DateTime?
+
+  cancelledAt DateTime?
+
+  feedback String?
+
+  score Float?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
