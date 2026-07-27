@@ -1,12 +1,17 @@
 import { Router } from "express";
 
-import authenticate from "../../middleware/auth.middleware.js";
+import authenticate, {
+  optionalAuthenticate,
+} from "../../middleware/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
 import validate from "../../middleware/validate.middleware.js";
 
 import {
   createJobSchema,
   updateJobSchema,
+  updateJobStatusSchema,
+  getPublicJobsQuerySchema,
+  getMyJobsQuerySchema,
 } from "./job.validation.js";
 
 import {
@@ -15,6 +20,7 @@ import {
   getJobById,
   updateJob,
   updateJobStatus,
+  getPublicJobs,
 } from "./job.controller.js";
 
 const router = Router();
@@ -31,10 +37,21 @@ router.get(
   "/me",
   authenticate,
   authorize("RECRUITER"),
+  validate(getMyJobsQuerySchema, "query"),
   getMyJobs
 );
 
-router.get("/:id", getJobById);
+router.get(
+  "/",
+  validate(getPublicJobsQuerySchema, "query"),
+  getPublicJobs
+);
+
+router.get(
+  "/:id",
+  optionalAuthenticate,
+  getJobById
+);
 
 router.patch(
   "/:id",
@@ -48,6 +65,7 @@ router.patch(
   "/:id/status",
   authenticate,
   authorize("RECRUITER"),
+  validate(updateJobStatusSchema),
   updateJobStatus
 );
 

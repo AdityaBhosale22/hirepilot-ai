@@ -33,4 +33,25 @@ const authenticate = asyncHandler(async (req, res, next) => {
   next();
 });
 
+export const optionalAuthenticate = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    req.user = null;
+    return next();
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = verifyAccessToken(token);
+    const user = await authRepository.findUserById(decoded.userId);
+    req.user = user || null;
+  } catch (error) {
+    req.user = null;
+  }
+
+  next();
+});
+
 export default authenticate;
