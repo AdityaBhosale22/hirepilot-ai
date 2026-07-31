@@ -216,13 +216,16 @@ class DashboardRepository {
    * @param {number} limit 
    */
   async findRecommendedJobs(excludeJobIds = [], limit = 5) {
+    const where = {
+      status: JobStatus.OPEN,
+    };
+
+    if (Array.isArray(excludeJobIds) && excludeJobIds.length > 0) {
+      where.id = { notIn: excludeJobIds };
+    }
+
     return prisma.job.findMany({
-      where: {
-        status: JobStatus.OPEN,
-        id: {
-          notIn: excludeJobIds,
-        },
-      },
+      where,
       take: limit,
       orderBy: {
         createdAt: "desc",

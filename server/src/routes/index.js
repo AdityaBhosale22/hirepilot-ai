@@ -8,6 +8,8 @@ import resumeRoutes from "../modules/resume/resume.routes.js";
 import interviewRoutes from "../modules/interview/interview.routes.js";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 import notificationRoutes from "../modules/notification/notification.routes.js";
+import jobMatchingRoutes from "../modules/job-matching/job-matching.routes.js"
+import resumeAiRoutes from "../modules/resume-ai/resume-ai.routes.js"
 
 const router = Router();
 
@@ -19,5 +21,7 @@ router.use("/resumes", resumeRoutes);
 router.use("/interviews", interviewRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/job-matching", jobMatchingRoutes);
+router.use("/resume-ai", resumeAiRoutes);
 
 export default router;

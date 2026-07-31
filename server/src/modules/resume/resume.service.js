@@ -1,6 +1,7 @@
 import ApiError from "../../utils/ApiError.js";
 import resumeRepository from "./resume.repository.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../../utils/cloudinary.js";
+import pdfExtractor from "../../ai/pdf.extractor.js";
 
 class ResumeService {
   /**
@@ -39,6 +40,16 @@ class ResumeService {
     // First resume uploaded automatically becomes default
     const isDefault = count === 0;
 
+    // Extract PDF text at upload time so downstream AI jobs (resume analysis, job matching)
+    // always have resume content available without re-downloading the file.
+    let parsedText = null;
+    try {
+      const extraction = await pdfExtractor.extractText(file.buffer);
+      parsedText = pdfExtractor.cleanExtractedText(extraction.text);
+    } catch (error) {
+      console.warn(`[Resume] PDF text extraction failed for upload '${title}':`, error.message);
+    }
+
     // Upload asset to Cloudinary storage
     const uploadResult = await uploadToCloudinary(
       file.buffer,
@@ -52,6 +63,7 @@ class ResumeService {
       fileUrl: uploadResult.fileUrl,
       publicId: uploadResult.publicId,
       originalFileName: file.originalname || "resume.pdf",
+      parsedText,
       isDefault,
     });
   }

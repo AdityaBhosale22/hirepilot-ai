@@ -393,6 +393,59 @@ class ApplicationRepository {
   }
 
   /**
+   * Find a job's recruiter userId and company name for notification dispatch
+   * @param {string} jobId 
+   */
+  async findJobForNotification(jobId) {
+    return prisma.job.findUnique({
+      where: { id: jobId },
+      select: {
+        id: true,
+        title: true,
+        recruiter: {
+          select: {
+            userId: true,
+          },
+        },
+        company: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Find application details needed for status-change notifications
+   * @param {string} applicationId 
+   */
+  async findApplicationForStatusNotification(applicationId) {
+    return prisma.application.findUnique({
+      where: { id: applicationId },
+      select: {
+        id: true,
+        candidate: {
+          select: {
+            userId: true,
+          },
+        },
+        job: {
+          select: {
+            id: true,
+            title: true,
+            company: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  /**
    * Find full detailed application record by ID for single application view
    * @param {string} id 
    */

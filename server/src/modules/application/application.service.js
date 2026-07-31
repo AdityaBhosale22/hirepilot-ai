@@ -1,6 +1,7 @@
 import { ApplicationStatus } from "@prisma/client";
 import ApiError from "../../utils/ApiError.js";
 import applicationRepository from "./application.repository.js";
+import notificationEventHandler from "../notification/notification.events.js";
 
 class ApplicationService {
   /**
@@ -60,12 +61,38 @@ class ApplicationService {
     }
 
     // 7. Create and return the application record
-    return applicationRepository.create({
+    const application = await applicationRepository.create({
       candidateId: candidateProfile.id,
       jobId,
       resumeId,
       status: ApplicationStatus.APPLIED,
     });
+
+    // 8. Notify candidate and recruiter asynchronously (non-blocking; must not fail the request)
+    this._dispatchApplicationSubmittedNotification(userId, jobId, application);
+
+    return application;
+  }
+
+  async _dispatchApplicationSubmittedNotification(candidateUserId, jobId, application) {
+    try {
+      const job = await applicationRepository.findJobForNotification(jobId);
+      if (!job) return;
+
+      const jobTitle = job.title;
+      const companyName = job.company?.name || "the company";
+      const recruiterUserId = job.recruiter?.userId;
+
+      await notificationEventHandler.handleApplicationSubmitted({
+        candidateUserId,
+        recruiterUserId,
+        jobId,
+        jobTitle,
+        companyName,
+      });
+    } catch (error) {
+      console.error("[Application] Failed to dispatch submitted notification:", error.message);
+    }
   }
 
   /**
@@ -234,7 +261,33 @@ class ApplicationService {
       );
     }
 
-    return applicationRepository.updateStatus(applicationId, newStatus);
+    const updatedApplication = await applicationRepository.updateStatus(applicationId, newStatus);
+
+    this._dispatchStatusNotification(applicationId, newStatus);
+
+    return updatedApplication;
+  }
+
+  async _dispatchStatusNotification(applicationId, newStatus) {
+    try {
+      const app = await applicationRepository.findApplicationForStatusNotification(applicationId);
+      if (!app) return;
+
+      const base = {
+        candidateUserId: app.candidate?.userId,
+        applicationId: app.id,
+        jobTitle: app.job?.title,
+        companyName: app.job?.company?.name,
+      };
+
+      if (newStatus === ApplicationStatus.SHORTLISTED) {
+        await notificationEventHandler.handleApplicationShortlisted(base);
+      } else if (newStatus === ApplicationStatus.REJECTED) {
+        await notificationEventHandler.handleApplicationRejected(base);
+      }
+    } catch (error) {
+      console.error("[Application] Failed to dispatch status notification:", error.message);
+    }
   }
 
   /**

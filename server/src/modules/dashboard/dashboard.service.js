@@ -113,7 +113,7 @@ class DashboardService {
 
     const recruiterId = recruiter.id;
 
-    // Calculate Date boundaries for Today and This Week
+    // Calculate Date boundaries for Today and This Week (last 7 days rolling window)
     const now = new Date();
     
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -122,8 +122,7 @@ class DashboardService {
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - 7);
 
-    const weekEnd = new Date(todayEnd);
-    weekEnd.setDate(weekEnd.getDate() + 7);
+    const weekEnd = new Date(now);
 
     // Concurrently execute all independent metrics queries
     const [

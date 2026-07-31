@@ -1,6 +1,7 @@
 import { ApplicationStatus, InterviewStatus } from "@prisma/client";
 import ApiError from "../../utils/ApiError.js";
 import interviewRepository from "./interview.repository.js";
+import notificationEventHandler from "../notification/notification.events.js";
 
 class InterviewService {
   /**
@@ -85,7 +86,7 @@ class InterviewService {
     );
 
     // Domain Event Hook: Event subscriber can send Email/Socket notifications
-    this._publishDomainEvent("InterviewScheduled", interview);
+    this._publishDomainEvent("InterviewScheduled", interview, userId);
 
     return interview;
   }
@@ -252,7 +253,7 @@ class InterviewService {
     );
 
     if (updateData.status === InterviewStatus.RESCHEDULED) {
-      this._publishDomainEvent("InterviewRescheduled", updatedInterview);
+      this._publishDomainEvent("InterviewRescheduled", updatedInterview, userId);
     }
 
     return updatedInterview;
@@ -340,7 +341,7 @@ class InterviewService {
       updateData
     );
 
-    this._publishDomainEvent(`InterviewStatus_${payload.status}`, updatedInterview);
+    this._publishDomainEvent(`InterviewStatus_${payload.status}`, updatedInterview, userId);
 
     return updatedInterview;
   }
@@ -361,12 +362,61 @@ class InterviewService {
 
   /**
    * Domain Event Publisher Hook for Notification System
+   * Dispatches real-time notifications to the affected candidate/recruiter asynchronously.
+   * Notification failures are non-blocking and must never fail the core request.
    * @param {string} eventName 
-   * @param {Object} data 
+   * @param {Object} data - Interview record (with application relations)
+   * @param {string} recruiterUserId - Acting recruiter's user ID
    */
-  _publishDomainEvent(eventName, data) {
-    // Non-blocking event hook for future Email / Notification service integration
-    // e.g. eventEmitter.emit(eventName, data);
+  _publishDomainEvent(eventName, data, recruiterUserId) {
+    const candidateUserId = data.application?.candidate?.user?.id;
+    const jobTitle = data.application?.job?.title;
+
+    const dispatch = async () => {
+      try {
+        switch (eventName) {
+          case "InterviewScheduled":
+            await notificationEventHandler.handleInterviewScheduled({
+              candidateUserId,
+              recruiterUserId,
+              jobTitle,
+              scheduledAt: data.scheduledAt,
+              interviewId: data.id,
+            });
+            break;
+          case "InterviewRescheduled":
+            await notificationEventHandler.handleInterviewRescheduled({
+              candidateUserId,
+              recruiterUserId,
+              jobTitle,
+              newScheduledAt: data.scheduledAt,
+              interviewId: data.id,
+            });
+            break;
+          case "InterviewStatus_COMPLETED":
+            await notificationEventHandler.handleInterviewCompleted({
+              candidateUserId,
+              jobTitle,
+              interviewId: data.id,
+            });
+            break;
+          case "InterviewStatus_CANCELLED":
+            await notificationEventHandler.handleInterviewCancelled({
+              candidateUserId,
+              jobTitle,
+              cancelReason: data.cancelReason,
+              interviewId: data.id,
+            });
+            break;
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error(`[Interview] Failed to dispatch notification for '${eventName}':`, error.message);
+      }
+    };
+
+    dispatch();
   }
 }
 
