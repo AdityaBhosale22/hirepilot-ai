@@ -1,77 +1,104 @@
 /**
  * @file resume-ai.processor.js
- * @description BullMQ processor logic for the AI Worker
+ * @description Core processor for resume analysis jobs. Owns the AI prompt rendering,
+ * Gemini call, persistence of the analysis report, and candidate notification.
  */
-const resumeAiRepository = require('./resume-ai.repository');
-const pdfExtractor = require('../../ai/pdf.extractor');
-const promptManager = require('../../ai/prompt.manager');
-const geminiService = require('../../ai/gemini.service');
-const responseParser = require('../../ai/response.parser');
-const aiLogger = require('../../ai/ai.logger');
-const notificationService = require('../notification/notification.service');
-const { RESUME_AI_EVENTS } = require('./resume-ai.events');
+import resumeAiRepository from "./resume-ai.repository.js";
+import { RESUME_AI_EVENTS } from "./resume-ai.events.js";
+import notificationEventHandler from "../notification/notification.events.js";
+import geminiService from "../../ai/gemini.service.js";
+import promptManager from "../../ai/prompt.manager.js";
+import aiLogger from "../../ai/ai.logger.js";
 
-async function processResumeAnalysis(job) {
-  const { resumeId, userId, fileUrl } = job.data;
-  aiLogger.info(`Starting resume analysis for ID: ${resumeId}`);
+/**
+ * Main resume analysis pipeline
+ * @param {Object} job - { data: { resumeId, userId } }
+ */
+export async function processResumeAnalysis(job) {
+  const { resumeId, userId } = job?.data || {};
+  if (!resumeId) {
+    throw new Error("Resume analysis job missing required 'resumeId' in payload.");
+  }
+
+  const startedAt = Date.now();
+
+  const resume = await resumeAiRepository.findResumeById(resumeId);
+  if (!resume) {
+    throw new Error(`Resume '${resumeId}' not found for analysis.`);
+  }
+  if (!resume.parsedText || !resume.parsedText.trim()) {
+    throw new Error(`Resume '${resumeId}' has no extractable text. Upload the PDF again or re-run extraction.`);
+  }
+
+  await resumeAiRepository.updateAnalysisStatus(resumeId, "PROCESSING", {
+    analysisStartedAt: new Date(),
+  });
 
   try {
-    // 1. Mark as Processing
-    await resumeAiRepository.updateAnalysisStatus(resumeId, 'PROCESSING', {
-      analysisStartedAt: new Date()
-    });
-    notificationService.emitToUser(userId, RESUME_AI_EVENTS.ANALYSIS_STARTED, { resumeId });
-
-    // 2. Extract Text from PDF
-    const parsedText = await pdfExtractor.extract(fileUrl);
-    if (!parsedText || parsedText.trim().length < 50) {
-      throw new Error('Could not extract sufficient text from the PDF.');
-    }
-
-    // 3. Build Prompt from Prompt Templates
-    const prompt = promptManager.build('RESUME_ANALYSIS_TEMPLATE', {
-      resumeText: parsedText
+    const renderedPrompt = promptManager.renderPrompt("RESUME_ANALYSIS", {
+      resumeTitle: resume.title,
+      resumeText: resume.parsedText,
     });
 
-    // 4. Generate AI Response (Gemini)
-    const geminiResponse = await geminiService.generate(prompt, {
-      temperature: 0.2, // Low temp for highly structured, analytical output
-      maxOutputTokens: 2048
+    const aiResult = await geminiService.generateStructuredJSON({
+      prompt: renderedPrompt.userPrompt,
+      systemPrompt: renderedPrompt.systemPrompt,
+      moduleName: "RESUME_ANALYSIS",
+      promptName: renderedPrompt.name,
+      temperature: 0.2,
     });
 
-    // 5. Parse and Validate JSON Response
-    const reportData = responseParser.parseJSON(geminiResponse, {
-      requiredKeys: [
-        'overallAtsScore', 'professionalSummary', 'strengths', 
-        'weaknesses', 'missingSkills', 'industryFit'
-      ]
+    const report = aiResult.data;
+
+    await resumeAiRepository.saveAnalysisReport(resumeId, report, resume.parsedText);
+
+    aiLogger.logSuccess({
+      moduleName: "RESUME_AI",
+      promptName: "RESUME_ANALYSIS",
+      version: "1.0.0",
+      latencyMs: Date.now() - startedAt,
+      tokenUsage: aiResult.usage,
     });
 
-    // 6. Save to Database
-    await resumeAiRepository.saveAnalysisReport(resumeId, reportData, parsedText);
+    await notifyCandidate(userId, resumeId, resume.title, report.overallAtsScore);
 
-    // 7. Notify Success
-    notificationService.emitToUser(userId, RESUME_AI_EVENTS.ANALYSIS_COMPLETED, { resumeId });
-    aiLogger.info(`Successfully completed resume analysis for ID: ${resumeId}`);
-
-    return { success: true, resumeId };
-
+    return report;
   } catch (error) {
-    aiLogger.error(`Failed resume analysis for ID: ${resumeId}`, error);
-    
-    // Fallback: Mark as Failed
-    await resumeAiRepository.updateAnalysisStatus(resumeId, 'FAILED', {
-      analysisCompletedAt: new Date() // Record when it failed
-    });
-    
-    // Notify Failure
-    notificationService.emitToUser(userId, RESUME_AI_EVENTS.ANALYSIS_FAILED, { 
-      resumeId, 
-      error: error.message 
+    await resumeAiRepository.updateAnalysisStatus(resumeId, "FAILED").catch(() => {});
+
+    aiLogger.logFailure({
+      moduleName: "RESUME_AI",
+      promptName: "RESUME_ANALYSIS",
+      version: "1.0.0",
+      latencyMs: Date.now() - startedAt,
+      error,
     });
 
-    throw error; // Let BullMQ Retry Strategy handle it based on attempt count
+    const { emitToUser } = await import("../notification/notification.socket.js");
+    emitToUser(userId, RESUME_AI_EVENTS.ANALYSIS_FAILED, { resumeId });
+
+    throw error;
   }
 }
 
-module.exports = { processResumeAnalysis };
+/**
+ * Persist a notification and emit a socket event so the candidate is informed
+ * the moment their resume analysis completes.
+ */
+async function notifyCandidate(userId, resumeId, resumeTitle, aiScore) {
+  if (!userId) return;
+
+  try {
+    await notificationEventHandler.handleResumeAnalyzed({
+      userId,
+      resumeId,
+      resumeTitle,
+      aiScore: aiScore ?? 0,
+    });
+
+    const { emitToUser } = await import("../notification/notification.socket.js");
+    emitToUser(userId, RESUME_AI_EVENTS.ANALYSIS_COMPLETED, { resumeId, aiScore });
+  } catch (err) {
+    console.error("[Resume AI] Failed to notify candidate:", err.message);
+  }
+}

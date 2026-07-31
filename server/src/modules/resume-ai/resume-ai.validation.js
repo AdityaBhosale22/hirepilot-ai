@@ -1,15 +1,13 @@
 /**
  * @file resume-ai.validation.js
  */
-const Joi = require('joi');
+import { z } from "zod";
 
-const resumeIdParam = Joi.object({
-  resumeId: Joi.string().uuid().required().messages({
-    'string.empty': 'Resume ID is required',
-    'string.guid': 'Resume ID must be a valid UUID',
-  }),
+export const resumeIdParamSchema = z.object({
+  resumeId: z
+    .string({
+      required_error: "Resume ID is required in URL path.",
+      invalid_type_error: "Resume ID must be a string.",
+    })
+    .cuid("Invalid Resume ID format."),
 });
-
-module.exports = {
-  resumeIdParam,
-};

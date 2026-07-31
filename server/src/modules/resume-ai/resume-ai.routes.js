@@ -1,34 +1,27 @@
 /**
  * @file resume-ai.routes.js
  */
-const express = require('express');
-const router = express.Router();
+import { Router } from "express";
+import authenticate from "../../middleware/auth.middleware.js";
+import authorize from "../../middleware/authorize.middleware.js";
+import validate from "../../middleware/validate.middleware.js";
+import { resumeIdParamSchema } from "./resume-ai.validation.js";
+import resumeAiController from "./resume-ai.controller.js";
 
-const resumeAiController = require('./resume-ai.controller');
-const validate = require('../../middleware/validate.middleware');
-const { resumeIdParam } = require('./resume-ai.validation');
-const { verifyJWT, authorizeRoles } = require('../../middleware/auth.middleware');
+const router = Router();
 
-// Apply authentication to all routes in this module
-router.use(verifyJWT);
-router.use(authorizeRoles('USER'));
+router.use(authenticate, authorize("CANDIDATE"));
 
 router.post(
-  '/:resumeId/analyze',
-  validate(resumeIdParam, 'params'),
-  resumeAiController.queueAnalysis
+  "/:resumeId/analyze",
+  validate(resumeIdParamSchema, "params"),
+  resumeAiController.startAnalysis
 );
 
 router.get(
-  '/:resumeId/status',
-  validate(resumeIdParam, 'params'),
-  resumeAiController.getAnalysisStatus
+  "/:resumeId/analysis",
+  validate(resumeIdParamSchema, "params"),
+  resumeAiController.getAnalysis
 );
 
-router.get(
-  '/:resumeId/report',
-  validate(resumeIdParam, 'params'),
-  resumeAiController.getAnalysisReport
-);
-
-module.exports = router;
+export default router;
