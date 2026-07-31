@@ -72,6 +72,9 @@ class PromptManager {
       renderedUserPrompt = renderedUserPrompt.replace(placeholder, stringValue);
     });
 
+    // Clean any unreplaced placeholders to prevent template leakage into prompts
+    renderedUserPrompt = renderedUserPrompt.replace(/{{\s*[\w.\-]+\s*}}/g, "");
+
     return {
       systemPrompt: template.systemPrompt,
       userPrompt: renderedUserPrompt,

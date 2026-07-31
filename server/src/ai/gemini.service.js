@@ -10,9 +10,18 @@ import aiLogger from "./ai.logger.js";
  * Single authoritative access point for all Gemini LLM interactions across HirePilot AI.
  */
 class GeminiService {
-  constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-    this.defaultModel = "gemini-1.5-pro";
+  /**
+   * Resolve the default Gemini model at call time so the GEMINI_MODEL env override always applies
+   */
+  get defaultModel() {
+    return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  }
+
+  /**
+   * Resolve the Gemini API key at call time so env changes and dotenv loading order cannot stale it
+   */
+  get apiKey() {
+    return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
   }
 
   /**
@@ -130,7 +139,9 @@ class GeminiService {
       systemPrompt: jsonSystemPrompt,
     });
 
-    const parsedData = responseParser.parseJSON(result.text);
+    const parsedData = responseParser.parseJSON(result.text, {
+      requiredKeys: params.requiredKeys || [],
+    });
     const hallucinationCheck = responseParser.detectHallucination(parsedData);
 
     return {

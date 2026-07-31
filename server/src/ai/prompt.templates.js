@@ -11,16 +11,22 @@ export const PROMPT_TEMPLATES = {
     systemPrompt: `You are an expert AI Applicant Tracking System (ATS) Auditor and Technical Recruiter.
 Analyze the provided resume text thoroughly and output ONLY valid JSON matching this schema:
 {
-  "candidateName": "string or null",
-  "email": "string or null",
-  "phone": "string or null",
-  "summary": "string",
-  "overallScore": number (0-100),
+  "overallAtsScore": number (0-100),
+  "grammarScore": number (0-100),
+  "formattingScore": number (0-100),
+  "keywordScore": number (0-100),
+  "jobReadinessScore": number (0-100),
+  "atsCompatibility": number (0-100),
+  "careerLevel": "string",
+  "industryFit": "string",
+  "professionalSummary": "string",
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "missingSkills": ["string"],
+  "recommendedSkills": ["string"],
+  "experienceSummary": "string",
   "skills": ["string"],
-  "experienceYears": number,
-  "education": ["string"],
-  "keyStrengths": ["string"],
-  "areasForImprovement": ["string"]
+  "actionableSuggestions": ["string"]
 }`,
     userTemplate: `Please analyze the following resume content:
 
@@ -51,6 +57,31 @@ Required Skills: {{requiredSkills}}
 
 --- CANDIDATE RESUME ---
 {{resumeText}}`,
+  },
+
+  JOB_MATCHING_V2: {
+    name: "JOB_MATCHING_V2",
+    version: "1.0.0",
+    description: "Full job match evaluation producing the structured report persisted to JobMatch records.",
+    systemPrompt: `You are a Senior Technical Recruiter.
+Compare the candidate resume with the job description and output ONLY valid JSON matching this schema:
+{
+  "overallScore": number (0-100),
+  "matchedSkills": ["string"],
+  "missingSkills": ["string"],
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "summary": "string",
+  "recommendation": "HIGH" | "MEDIUM" | "LOW"
+}`,
+    userTemplate: `Resume Summary: {{resumeSummary}}
+Resume Skills: {{resumeSkills}}
+Resume Strengths: {{resumeStrengths}}
+Resume Weaknesses: {{resumeWeaknesses}}
+
+Job Title: {{jobTitle}}
+Job Description: {{jobDescription}}
+Required Skills: {{requiredSkills}}`,
   },
 
   INTERVIEW_QUESTIONS: {
@@ -147,31 +178,3 @@ Current Skills: {{skills}}
 Background: {{resumeSummary}}`,
   },
 };
-// Add to prompt.templates.js
-const RESUME_ANALYSIS_TEMPLATE = `
-You are a Distinguished Technical Recruiter and ATS Expert. Analyze the following parsed resume text and return a STRICT JSON response. Do not include markdown formatting or extra text.
-
-Resume Text:
-"""
-{{resumeText}}
-"""
-
-Required JSON Structure:
-{
-  "overallAtsScore": <Float 0-100>,
-  "grammarScore": <Float 0-100>,
-  "formattingScore": <Float 0-100>,
-  "keywordScore": <Float 0-100>,
-  "jobReadinessScore": <Float 0-100>,
-  "atsCompatibility": <Float 0-100>,
-  "careerLevel": "<String (e.g., Junior, Mid-Level, Senior, Executive)>",
-  "industryFit": "<String>",
-  "professionalSummary": "<String (3-4 sentences)>",
-  "strengths": ["<String>", "<String>"],
-  "weaknesses": ["<String>", "<String>"],
-  "missingSkills": ["<String>"],
-  "recommendedSkills": ["<String>"],
-  "experienceSummary": "<String summarizing total years and depth>",
-  "actionableSuggestions": ["<String>"]
-}
-`;

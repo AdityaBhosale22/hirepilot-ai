@@ -4,28 +4,26 @@ import ApiError from "../utils/ApiError.js";
 const validate = (schema, property = "body") => {
   return (req, res, next) => {
     try {
-      // 1. Parse and validate the data using Zod
       const parsedData = schema.parse(req[property]);
 
-      // 2. THE FIX: Safely reassign the data back to the request object
-      if (property === "query") {
-        // Redefine the property to bypass Express's getter-only restriction
-        Object.defineProperty(req, "query", {
+      // Express defines req.query and req.params as getter-only properties,
+      // so they must be redefined before reassignment.
+      if (property === "query" || property === "params") {
+        Object.defineProperty(req, property, {
           value: parsedData,
           enumerable: true,
           configurable: true,
           writable: true,
         });
       } else {
-        // req.body and req.params can safely be reassigned directly
         req[property] = parsedData;
       }
 
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Extract Zod errors (Keep whatever error handling logic you currently have here)
-        const errorMessage = error.errors.map((e) => e.message).join(", ");
+        // Zod v4 exposes issues via `error.issues` (the legacy `errors` alias was removed)
+        const errorMessage = error.issues.map((e) => e.message).join(", ");
         return next(new ApiError(400, errorMessage));
       }
       next(error);

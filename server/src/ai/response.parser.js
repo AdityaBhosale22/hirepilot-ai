@@ -8,37 +8,49 @@ class ResponseParser {
   /**
    * Extract and parse JSON from AI model response string
    * @param {string} rawResponse 
+   * @param {Object} options - { requiredKeys: string[] }
    * @returns {Object} Parsed JSON object
    */
-  parseJSON(rawResponse) {
+  parseJSON(rawResponse, { requiredKeys = [] } = {}) {
     if (!rawResponse || typeof rawResponse !== "string") {
       throw new ApiError(500, "Empty or invalid response received from AI service.");
     }
 
     const cleanedText = this.stripMarkdown(rawResponse);
 
-    // Attempt direct JSON parse
+    let parsed;
     try {
-      return JSON.parse(cleanedText);
+      parsed = JSON.parse(cleanedText);
     } catch (firstError) {
-      // Attempt JSON recovery via regex extraction
       const extractedJSON = this._extractJSONSubstring(cleanedText);
       if (extractedJSON) {
         try {
-          return JSON.parse(extractedJSON);
+          parsed = JSON.parse(extractedJSON);
         } catch (secondError) {
-          // Attempt sanitized fix for common unescaped quotes / trailing commas
           const fixedJSON = this._fixMalformedJSON(extractedJSON);
           try {
-            return JSON.parse(fixedJSON);
+            parsed = JSON.parse(fixedJSON);
           } catch (thirdError) {
             console.error("[ResponseParser Error] Failed all JSON recovery attempts:", rawResponse);
             throw new ApiError(500, "AI returned invalid or malformed JSON output format.");
           }
         }
+      } else {
+        throw new ApiError(500, "Failed to parse JSON structure from AI output.");
       }
-      throw new ApiError(500, "Failed to parse JSON structure from AI output.");
     }
+
+    if (requiredKeys.length > 0) {
+      const missingKeys = requiredKeys.filter((key) => parsed?.[key] === undefined);
+      if (missingKeys.length > 0) {
+        throw new ApiError(
+          500,
+          `AI response is missing required fields: ${missingKeys.join(", ")}.`
+        );
+      }
+    }
+
+    return parsed;
   }
 
   /**

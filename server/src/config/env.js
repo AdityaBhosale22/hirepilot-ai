@@ -2,15 +2,33 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const requiredSecrets = ["DATABASE_URL", "ACCESS_TOKEN_SECRET", "REFRESH_TOKEN_SECRET"];
+
+for (const secret of requiredSecrets) {
+  if (!process.env[secret]) {
+    console.warn(`[env] Missing required environment variable: ${secret}`);
+  }
+}
+
 export const env = {
-  PORT: process.env.PORT,
+  PORT: Number(process.env.PORT) || 5000,
   DATABASE_URL: process.env.DATABASE_URL,
 
   ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
 
-  ACCESS_TOKEN_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY,
-  REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
+  ACCESS_TOKEN_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY || "15m",
+  REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || "7d",
 
-  NODE_ENV: process.env.NODE_ENV,
+  NODE_ENV: process.env.NODE_ENV || "development",
+
+  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || "*",
+
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "",
+
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "",
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "",
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "",
 };
+
+export const isProduction = env.NODE_ENV === "production";
