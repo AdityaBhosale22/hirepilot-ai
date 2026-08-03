@@ -1,8 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import CandidateLayout from '../../components/candidate/CandidateLayout';
 import { Shield, Bell, Lock } from 'lucide-react';
 
 export default function Settings() {
+  const navigate = useNavigate();
+
+  const handleChangePassword = async () => {
+    navigate('/reset-password');
+  };
+
   return (
     <CandidateLayout title="Settings">
       <div className="max-w-3xl space-y-6">
@@ -27,7 +34,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold text-white border-b border-gray-800 pb-3 flex items-center gap-2">
             <Lock className="w-4 h-4 text-[#06B6D4]" /> Security
           </h2>
-          <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white rounded-lg">
+          <button onClick={handleChangePassword} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white rounded-lg">
             Change Password
           </button>
         </div>

@@ -6,6 +6,10 @@ const authorize = (...allowedRoles) => {
       throw new ApiError(401, "Unauthorized");
     }
 
+    if (req.user.role === "ADMIN") {
+      return next();
+    }
+
     if (!allowedRoles.includes(req.user.role)) {
       throw new ApiError(
         403,

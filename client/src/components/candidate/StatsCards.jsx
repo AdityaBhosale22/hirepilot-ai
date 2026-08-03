@@ -1,49 +1,45 @@
-import React from 'react';
-import { Briefcase, Send, Video, Sparkles, ArrowUpRight } from 'lucide-react';
+import { Send, FileSearch, Video, CheckCircle2 } from "lucide-react";
+import Skeleton from "../shared/Skeleton";
 
-export default function StatsCards() {
-  const stats = [
-    { 
-      label: 'Applied Jobs', 
-      value: '24', 
-      change: '+4 this week', 
-      icon: Send, 
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10'
+export default function StatsCards({ stats = {}, loading = false }) {
+  const items = [
+    {
+      label: "Applications Submitted",
+      value: stats.applications,
+      icon: Send,
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
     },
-    { 
-      label: 'Interviews Scheduled', 
-      value: '3', 
-      change: 'Next: Tomorrow', 
-      icon: Video, 
-      color: 'text-cyan-400',
-      bg: 'bg-cyan-500/10'
+    {
+      label: "In Review",
+      value: stats.reviewing,
+      icon: FileSearch,
+      color: "text-yellow-400",
+      bg: "bg-yellow-500/10",
     },
-    { 
-      label: 'Profile Views', 
-      value: '142', 
-      change: '+18% vs last month', 
-      icon: Briefcase, 
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/10'
+    {
+      label: "Interviews Scheduled",
+      value: stats.interviewScheduled,
+      icon: Video,
+      color: "text-cyan-400",
+      bg: "bg-cyan-500/10",
     },
-    { 
-      label: 'AI Resume Score', 
-      value: '88/100', 
-      change: 'Top 10% candidate', 
-      icon: Sparkles, 
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10'
+    {
+      label: "Shortlisted",
+      value: stats.shortlisted,
+      icon: CheckCircle2,
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
     },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {stats.map((stat, idx) => {
+      {items.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div 
-            key={idx}
+          <div
+            key={stat.label}
             className="p-5 rounded-xl bg-[#0a0a0a] border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
           >
             <div className="flex items-center justify-between mb-3">
@@ -53,10 +49,13 @@ export default function StatsCards() {
               </div>
             </div>
             <div className="flex items-baseline justify-between">
-              <h3 className="text-2xl font-bold text-white tracking-tight">{stat.value}</h3>
-              <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                {stat.change} <ArrowUpRight className="w-3 h-3 text-gray-600" />
-              </span>
+              {loading ? (
+                <Skeleton className="h-7 w-12" />
+              ) : (
+                <h3 className="text-2xl font-bold text-white tracking-tight">
+                  {stat.value ?? 0}
+                </h3>
+              )}
             </div>
           </div>
         );

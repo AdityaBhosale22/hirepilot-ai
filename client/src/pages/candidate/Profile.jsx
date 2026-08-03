@@ -1,6 +1,5 @@
-import React from 'react';
 import CandidateLayout from '../../components/candidate/CandidateLayout';
-import { User, Mail, MapPin, Globe, Github, Linkedin, Briefcase } from 'lucide-react';
+import { Mail, MapPin, GitBranch, Link2 } from 'lucide-react';
 
 export default function Profile() {
   return (
@@ -29,10 +28,10 @@ export default function Profile() {
           <h3 className="text-sm font-semibold text-white border-b border-gray-800 pb-3">Online Presence</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="flex items-center gap-3 p-3 bg-[#111] border border-gray-800 rounded-lg text-gray-300">
-              <Github className="w-4 h-4 text-gray-400" /> github.com/johndoe
+              <GitBranch className="w-4 h-4 text-gray-400" /> github.com/johndoe
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#111] border border-gray-800 rounded-lg text-gray-300">
-              <Linkedin className="w-4 h-4 text-gray-400" /> linkedin.com/in/johndoe
+              <Link2 className="w-4 h-4 text-gray-400" /> linkedin.com/in/johndoe
             </div>
           </div>
         </div>

@@ -3,14 +3,16 @@ import { AuthContext } from "../contexts/AuthContext";
 import authApi from "../api/auth.api";
 import { setAccessToken, onAuthFailure } from "../api/axios";
 import { getDashboardPath } from "../types/roles";
+import { clearAuthStorage, getStoredAccessToken } from "../services/storage.service";
 
 export default function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [accessToken, setToken] = useState(null);
+    const [accessToken, setToken] = useState(() => getStoredAccessToken());
     const [isLoading, setIsLoading] = useState(true);
 
     const clearAuth = useCallback(() => {
         setAccessToken(null);
+        clearAuthStorage();
         setToken(null);
         setUser(null);
     }, []);
@@ -21,30 +23,27 @@ export default function AuthProvider({ children }) {
 
         if (token) {
             setAccessToken(token);
+            setToken(token);
         }
-        setToken(token || null);
-        setUser(data?.user ?? null);
 
-        return data?.user;
+        if (data?.user) {
+            setUser(data.user);
+        }
+
+        return data;
     }, []);
 
-    const register = useCallback(
-        async ({ fullName, email, password, role }) => {
-            await authApi.register({ fullName, email, password, role });
+    const register = useCallback(async ({ fullName, email, password, role }) => {
+        const data = await authApi.register({ fullName, email, password, role });
+        const token = data?.accessToken;
 
-            const data = await authApi.login({ email, password });
-            const token = data?.accessToken;
+        if (token) {
+            setAccessToken(token);
+            setToken(token);
+        }
 
-            if (token) {
-                setAccessToken(token);
-            }
-            setToken(token || null);
-            setUser(data?.user ?? null);
-
-            return data?.user;
-        },
-        []
-    );
+        return data;
+    }, []);
 
     const logout = useCallback(async () => {
         try {
@@ -61,6 +60,12 @@ export default function AuthProvider({ children }) {
         setUser(currentUser ?? null);
         return currentUser;
     }, []);
+
+    const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
+        const result = await authApi.changePassword({ currentPassword, newPassword });
+        clearAuth();
+        return result;
+    }, [clearAuth]);
 
     useEffect(() => {
         let active = true;
@@ -98,6 +103,7 @@ export default function AuthProvider({ children }) {
             if (active) {
                 clearAuth();
             }
+            window.location.assign("/login");
         };
 
         onAuthFailure(handleAuthFailure);
@@ -118,9 +124,10 @@ export default function AuthProvider({ children }) {
             register,
             logout,
             getCurrentUser,
+            changePassword,
             dashboardPath: getDashboardPath(user?.role),
         }),
-        [user, accessToken, isLoading, login, register, logout, getCurrentUser]
+        [user, accessToken, isLoading, login, register, logout, getCurrentUser, changePassword]
     );
 
     return (

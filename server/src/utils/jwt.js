@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 
@@ -19,4 +20,8 @@ export const verifyAccessToken = (token) => {
 
 export const verifyRefreshToken = (token) => {
   return jwt.verify(token, env.REFRESH_TOKEN_SECRET);
+};
+
+export const hashRefreshToken = (token) => {
+  return createHash("sha256").update(token).digest("hex");
 };

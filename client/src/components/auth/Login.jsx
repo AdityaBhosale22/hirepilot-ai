@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,6 +8,9 @@ import AuthCard from '../../components/auth/AuthCard';
 import PasswordInput from '../../components/auth/PasswordInput';
 import SocialLogin from '../../components/auth/SocialLogin';
 import Divider from '../../components/auth/Divider';
+import authApi from '../../api/auth.api';
+import { useAuth } from '../../contexts/AuthContext';
+import { getDashboardPath } from '../../types/roles';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -16,19 +19,48 @@ const loginSchema = z.object({
 
 export default function Login() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log('Login data:', data);
+    try {
+      setSubmitError('');
+      setVerificationEmail('');
+
+      const response = await login({ email: data.email, password: data.password });
+      const user = response?.user ?? response;
+      navigate(getDashboardPath(user?.role));
+    } catch (error) {
+      setSubmitError(error?.message || 'Login failed. Please try again.');
+      setVerificationEmail(data.email);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      const email = verificationEmail || watch('email');
+      if (!email) return;
+
+      const response = await authApi.resendVerification({ email });
+      if (response?.verificationToken) {
+        navigate(`/verify-email?token=${encodeURIComponent(response.verificationToken)}&email=${encodeURIComponent(email)}`);
+      } else {
+        setSubmitError(response?.message || 'Verification link requested.');
+      }
+    } catch (error) {
+      setSubmitError(error?.message || 'Could not resend verification link.');
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -94,6 +126,21 @@ export default function Login() {
             </Link>
           </div>
         </div>
+
+        {submitError && (
+          <div className="space-y-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">
+            <p>{submitError}</p>
+            {submitError.toLowerCase().includes('verify') && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                className="font-medium text-[#06B6D4] hover:text-white transition-colors"
+              >
+                Resend verification link
+              </button>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"

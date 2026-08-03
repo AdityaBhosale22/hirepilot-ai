@@ -47,13 +47,37 @@ class AuthRepository {
     });
   }
 
-  async updateRefreshToken(userId, refreshToken) {
+  async updateRefreshToken(userId, refreshTokenHash, refreshTokenExpiresAt) {
     return prisma.user.update({
       where: {
         id: userId,
       },
       data: {
-        refreshToken,
+        refreshTokenHash,
+        refreshTokenExpiresAt,
+      },
+    });
+  }
+
+  async clearRefreshToken(userId) {
+    return prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshTokenHash: null,
+        refreshTokenExpiresAt: null,
+      },
+    });
+  }
+
+  async markEmailVerified(userId) {
+    return prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isEmailVerified: true,
       },
     });
   }
@@ -62,6 +86,40 @@ class AuthRepository {
     return prisma.user.findUnique({
       where: {
         email,
+      },
+    });
+  }
+
+  async findUserByIdWithAuth(id) {
+    return prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        avatar: true,
+        role: true,
+        isEmailVerified: true,
+        password: true,
+        refreshTokenHash: true,
+        refreshTokenExpiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async updatePassword(userId, hashedPassword) {
+    return prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        password: hashedPassword,
+        refreshTokenHash: null,
+        refreshTokenExpiresAt: null,
       },
     });
   }
@@ -83,7 +141,6 @@ class AuthRepository {
       },
     });
   }
-
 }
 
 export default new AuthRepository();

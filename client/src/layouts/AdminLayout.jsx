@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
 
-export default function CandidateLayout() {
+export default function AdminLayout() {
   return <Outlet />;
 }

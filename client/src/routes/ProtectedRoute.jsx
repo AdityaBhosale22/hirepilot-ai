@@ -5,6 +5,7 @@ import { ROLES, getDashboardPath } from "../types/roles";
 const roleBySection = {
   candidate: ROLES.CANDIDATE,
   recruiter: ROLES.RECRUITER,
+  admin: ROLES.ADMIN,
 };
 
 function LoadingScreen() {

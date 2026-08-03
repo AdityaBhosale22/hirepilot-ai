@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_BASE_URL } from "../config/env";
+import { getStoredAccessToken, setStoredAccessToken } from "../services/storage.service";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -9,11 +10,12 @@ const api = axios.create({
     },
 });
 
-let accessToken = null;
+let accessToken = getStoredAccessToken();
 let authFailureHandler = null;
 
 export const setAccessToken = (token) => {
     accessToken = token || null;
+    setStoredAccessToken(accessToken);
 };
 
 export const getAccessToken = () => accessToken;
@@ -22,14 +24,29 @@ export const onAuthFailure = (handler) => {
     authFailureHandler = handler;
 };
 
-const AUTH_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"];
+// Endpoints that must NOT receive the access token (cookie-based or public).
+const AUTH_NO_TOKEN_ENDPOINTS = [
+    "/auth/login",
+    "/auth/register",
+    "/auth/refresh",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+    "/auth/verify-email",
+    "/auth/resend-verification",
+];
+
+// Auth endpoints that must NOT trigger the 401 → refresh flow (a 401 here is terminal).
+const AUTH_ENDPOINTS = [...AUTH_NO_TOKEN_ENDPOINTS, "/auth/logout", "/auth/change-password"];
+
+const isNoTokenEndpoint = (url = "") =>
+    AUTH_NO_TOKEN_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 
 const isAuthEndpoint = (url = "") =>
     AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 
 api.interceptors.request.use(
     (config) => {
-        if (accessToken && !isAuthEndpoint(config.url)) {
+        if (accessToken && !isNoTokenEndpoint(config.url)) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;

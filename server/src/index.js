@@ -13,10 +13,10 @@ import ApiError from "./utils/ApiError.js";
 
 const app = express();
 
+app.use(corsMiddleware);
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(corsMiddleware);
 
 app.get("/", (req, res) => {
   res.json({

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, ArrowLeft, MailCheck } from 'lucide-react';
 import AuthCard from '../../components/auth/AuthCard';
+import authApi from '../../api/auth.api';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -12,6 +13,8 @@ const forgotPasswordSchema = z.object({
 
 export default function ForgotPassword() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const {
     register,
@@ -22,7 +25,14 @@ export default function ForgotPassword() {
   });
 
   const onSubmit = async (data) => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const response = await authApi.forgotPassword({ email: data.email });
+
+    if (response?.resetToken) {
+      navigate(`/reset-password?token=${encodeURIComponent(response.resetToken)}&email=${encodeURIComponent(data.email)}`);
+      return;
+    }
+
+    setMessage(response?.message || 'If the account exists, a reset link has been generated.');
     setIsSubmitted(true);
   };
 
@@ -37,7 +47,7 @@ export default function ForgotPassword() {
             <MailCheck className="w-8 h-8 text-[#4F46E5]" />
           </div>
           <p className="text-gray-300 text-sm mb-8">
-            Click the link in the email to reset your password. If you don't see it, check your spam folder.
+            {message || "Click the link in the email to reset your password. If you don't see it, check your spam folder."}
           </p>
           <Link
             to="/login"

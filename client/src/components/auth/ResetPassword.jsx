@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import AuthCard from '../../components/auth/AuthCard';
 import PasswordInput from '../../components/auth/PasswordInput';
+import authApi from '../../api/auth.api';
 
 const resetPasswordSchema = z
   .object({
@@ -19,6 +20,10 @@ const resetPasswordSchema = z
 
 export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
 
   const {
     register,
@@ -29,8 +34,25 @@ export default function ResetPassword() {
   });
 
   const onSubmit = async (data) => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSuccess(true);
+    try {
+      setSubmitError('');
+
+      if (!token) {
+        setSubmitError('Reset token is missing. Please request a new link.');
+        return;
+      }
+
+      await authApi.resetPassword({
+        token,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+      });
+
+      setIsSuccess(true);
+      navigate('/login');
+    } catch (error) {
+      setSubmitError(error?.message || 'Could not reset password. Please try again.');
+    }
   };
 
   if (isSuccess) {
@@ -60,6 +82,12 @@ export default function ResetPassword() {
       subtitle="Please enter your new password below."
     >
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        {!token && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+            The reset link is missing or invalid. Request a new password reset link first.
+          </div>
+        )}
+
         <PasswordInput
           label="New password"
           placeholder="Enter new password"
@@ -73,6 +101,8 @@ export default function ResetPassword() {
           error={errors.confirmPassword}
           {...register('confirmPassword')}
         />
+
+        {submitError && <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">{submitError}</div>}
 
         <button
           type="submit"

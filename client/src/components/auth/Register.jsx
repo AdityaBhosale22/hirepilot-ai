@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,6 +8,8 @@ import AuthCard from '../../components/auth/AuthCard';
 import PasswordInput from '../../components/auth/PasswordInput';
 import SocialLogin from '../../components/auth/SocialLogin';
 import Divider from '../../components/auth/Divider';
+import { useAuth } from '../../contexts/AuthContext';
+import { getDashboardPath, ROLES } from '../../types/roles';
 
 const registerSchema = z
   .object({
@@ -23,6 +25,9 @@ const registerSchema = z
 
 export default function Register() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const navigate = useNavigate();
+  const { register: registerUser } = useAuth();
 
   const {
     register,
@@ -33,8 +38,27 @@ export default function Register() {
   });
 
   const onSubmit = async (data) => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log('Registration data:', data);
+    try {
+      setSubmitError('');
+
+      const response = await registerUser({
+        fullName: data.name,
+        email: data.email,
+        password: data.password,
+        role: ROLES.CANDIDATE,
+      });
+
+      if (response?.verificationToken) {
+        navigate(
+          `/verify-email?token=${encodeURIComponent(response.verificationToken)}&email=${encodeURIComponent(data.email)}`
+        );
+        return;
+      }
+
+      navigate(getDashboardPath(response?.user?.role || ROLES.CANDIDATE));
+    } catch (error) {
+      setSubmitError(error?.message || 'Registration failed. Please try again.');
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -111,6 +135,8 @@ export default function Register() {
           and{' '}
           <a href="#" className="font-medium text-[#4F46E5] hover:text-[#06B6D4]">Privacy Policy</a>.
         </div>
+
+        {submitError && <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">{submitError}</div>}
 
         <button
           type="submit"

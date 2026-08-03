@@ -1,43 +1,99 @@
-import React from 'react';
-import CandidateLayout from '../../components/candidate/CandidateLayout';
-import NotificationList from '../../components/candidate/NotificationList';
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import CandidateLayout from "../../components/candidate/CandidateLayout";
+import NotificationList from "../../components/candidate/NotificationList";
+import Pagination from "../../components/shared/Pagination";
+import ErrorState from "../../components/shared/ErrorState";
+import { CheckCheck } from "lucide-react";
+import notificationApi from "../../api/notification.api";
+import { QUERY_KEYS, DEFAULT_QUERY_OPTIONS } from "../../config/constants";
 
 export default function Notifications() {
-  const mockNotifications = [
-    {
-      id: 1,
-      title: 'Interview Scheduled with Supabase',
-      message: 'Technical Round 2 is confirmed for tomorrow at 2:00 PM EST.',
-      time: '10m ago',
-      type: 'interview',
-      read: false
-    },
-    {
-      id: 2,
-      title: 'AI Resume Score Increased',
-      message: 'Your resume score jumped from 82 to 88 following your latest update.',
-      time: '2h ago',
-      type: 'ai',
-      read: false
-    },
-    {
-      id: 3,
-      title: 'Application Viewed by Vercel',
-      message: 'A recruiter at Vercel reviewed your Senior React Engineer submission.',
-      time: '1d ago',
-      type: 'general',
-      read: true
-    }
-  ];
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [QUERY_KEYS.NOTIFICATIONS[0], { page, limit: 10 }],
+    queryFn: () => notificationApi.getNotifications({ page, limit: 10 }),
+    ...DEFAULT_QUERY_OPTIONS,
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.NOTIFICATIONS });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.UNREAD_COUNT });
+  };
+
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationApi.markAllAsRead(),
+    onSuccess: () => invalidate(),
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (notificationId) => notificationApi.markAsRead(notificationId),
+    onSuccess: () => invalidate(),
+  });
+
+  const handleMarkRead = (item) => {
+    markReadMutation.mutate(item.id);
+  };
+
+  const notifications = data?.notifications ?? [];
+  const pagination = data?.pagination ?? {};
+  const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   return (
     <CandidateLayout title="Notifications">
       <div className="max-w-3xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-semibold text-white">Recent Alerts</h2>
-          <button className="text-xs text-[#06B6D4] hover:underline">Mark all as read</button>
+          <div>
+            <h2 className="text-base font-semibold text-white">Recent Alerts</h2>
+            {unreadCount > 0 && (
+              <p className="text-xs text-gray-500 mt-0.5">{unreadCount} unread</p>
+            )}
+          </div>
+          <button
+            onClick={() => markAllMutation.mutate()}
+            disabled={unreadCount === 0 || markAllMutation.isPending}
+            className="text-xs text-[#06B6D4] hover:underline flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <CheckCheck className="w-3.5 h-3.5" /> Mark all as read
+          </button>
         </div>
-        <NotificationList notifications={mockNotifications} />
+
+        {isError && (
+          <div className="mb-4">
+            <ErrorState
+              title="Could not load notifications"
+              message={error?.message}
+              onRetry={refetch}
+            />
+          </div>
+        )}
+
+        <NotificationList
+          notifications={notifications}
+          loading={isLoading}
+          error={isError ? error?.message : null}
+          onRetry={refetch}
+          onMarkRead={handleMarkRead}
+        />
+
+        <div className="mt-6">
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={(nextPage) => {
+              setPage(nextPage);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        </div>
       </div>
     </CandidateLayout>
   );

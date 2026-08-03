@@ -65,6 +65,69 @@ export async function refreshToken() {
     }
 }
 
+export async function changePassword({ currentPassword, newPassword }) {
+    try {
+        const response = await api.patch("/auth/change-password", {
+            currentPassword,
+            newPassword,
+        });
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function forgotPassword({ email }) {
+    try {
+        const response = await api.post("/auth/forgot-password", { email });
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function resetPassword({ token, password, confirmPassword }) {
+    try {
+        const response = await api.post("/auth/reset-password", {
+            token,
+            password,
+            confirmPassword,
+        });
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function verifyEmail({ token }) {
+    try {
+        const response = await api.post("/auth/verify-email", { token });
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function resendVerification({ email }) {
+    try {
+        const response = await api.post("/auth/resend-verification", { email });
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
 export { getErrorMessage };
 
-export default { login, register, logout, getCurrentUser, refreshToken };
+export default {
+    login,
+    register,
+    logout,
+    getCurrentUser,
+    refreshToken,
+    changePassword,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    resendVerification,
+};
