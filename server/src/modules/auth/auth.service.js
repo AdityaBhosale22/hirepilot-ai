@@ -84,7 +84,10 @@ class AuthService {
       throw new ApiError(401, "Invalid email or password");
     }
 
-    if (!user.isEmailVerified) {
+    const REQUIRE_EMAIL_VERIFICATION =
+      process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+
+    if (REQUIRE_EMAIL_VERIFICATION && !user.isEmailVerified) {
       throw new ApiError(403, "Please verify your email before logging in.");
     }
 
@@ -116,7 +119,10 @@ class AuthService {
       throw new ApiError(401, "Invalid refresh token");
     }
 
-    if (!user.isEmailVerified) {
+    const REQUIRE_EMAIL_VERIFICATION =
+      process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+
+    if (REQUIRE_EMAIL_VERIFICATION && !user.isEmailVerified) {
       throw new ApiError(403, "Please verify your email before logging in.");
     }
 
@@ -291,7 +297,10 @@ class AuthService {
   }
 
   async issueTokens(user) {
-    if (!user.isEmailVerified) {
+    const REQUIRE_EMAIL_VERIFICATION =
+      process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+
+    if (REQUIRE_EMAIL_VERIFICATION && !user.isEmailVerified) {
       throw new ApiError(403, "Please verify your email before logging in.");
     }
 
