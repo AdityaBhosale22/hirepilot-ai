@@ -215,6 +215,22 @@ class NotificationEventHandler {
   }
 
   /**
+   * Event Handler: ApplicationHired
+   */
+  async handleApplicationHired(data) {
+    const { candidateUserId, jobTitle, companyName, applicationId } = data;
+
+    await notificationService.createNotification({
+      userId: candidateUserId,
+      title: "Congratulations, You're Hired!",
+      message: `Great news! You have been hired for '${jobTitle}' at ${companyName}. Welcome aboard!`,
+      type: NotificationType.APPLICATION,
+      entityId: applicationId,
+      entityType: "Application",
+    });
+  }
+
+  /**
    * Event Handler: OfferGenerated
    */
   async handleOfferGenerated(data) {

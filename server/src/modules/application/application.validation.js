@@ -83,3 +83,28 @@ export const updateApplicationStatusSchema = z.object({
     invalid_type_error: "Invalid application status provided.",
   }),
 });
+
+/**
+ * Validation schema for URL path params when updating recruiter notes (PATCH /api/v1/applications/:id/notes)
+ */
+export const updateApplicationNotesParamsSchema = z.object({
+  id: z
+    .string({
+      required_error: "Application ID is required in URL path.",
+      invalid_type_error: "Application ID must be a string.",
+    })
+    .cuid("Invalid Application ID format."),
+});
+
+/**
+ * Validation schema for payload when updating recruiter notes (PATCH /api/v1/applications/:id/notes)
+ */
+export const updateApplicationNotesSchema = z.object({
+  notes: z
+    .string({
+      invalid_type_error: "Notes must be a string.",
+    })
+    .trim()
+    .max(2000, "Notes cannot exceed 2000 characters.")
+    .optional(),
+});

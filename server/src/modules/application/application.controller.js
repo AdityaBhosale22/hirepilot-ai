@@ -87,10 +87,29 @@ const getApplicationById = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * Controller for recruiters to update recruiter notes on an application
+ * PATCH /api/v1/applications/:id/notes
+ */
+const updateRecruiterNotes = asyncHandler(async (req, res) => {
+  const updatedApplication = await applicationService.updateRecruiterNotes(
+    req.user.id,
+    req.params.id,
+    req.body.notes
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, "Recruiter notes updated successfully", {
+      application: updatedApplication,
+    })
+  );
+});
+
 export {
   createApplication,
   getMyApplications,
   getJobApplications,
   updateApplicationStatus,
   getApplicationById,
+  updateRecruiterNotes,
 };

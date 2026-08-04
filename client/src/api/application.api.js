@@ -32,4 +32,48 @@ export async function getMyApplications(params = {}) {
     }
 }
 
-export default { applyToJob, getMyApplications };
+export async function getJobApplications(jobId, params = {}) {
+    try {
+        const response = await api.get(`/applications/job/${jobId}`, { params });
+        const data = extractData(response);
+        return {
+            job: data?.job ?? null,
+            applications: data?.applications ?? [],
+            pagination: data?.pagination ?? {},
+        };
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateApplicationStatus(applicationId, status) {
+    try {
+        const response = await api.patch(`/applications/${applicationId}/status`, { status });
+        const data = extractData(response);
+        return data?.application ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function getApplicationById(applicationId) {
+    try {
+        const response = await api.get(`/applications/${applicationId}`);
+        const data = extractData(response);
+        return data?.application ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateApplicationNotes(applicationId, notes) {
+    try {
+        const response = await api.patch(`/applications/${applicationId}/notes`, { notes });
+        const data = extractData(response);
+        return data?.application ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export default { applyToJob, getMyApplications, getJobApplications, updateApplicationStatus, getApplicationById, updateApplicationNotes };

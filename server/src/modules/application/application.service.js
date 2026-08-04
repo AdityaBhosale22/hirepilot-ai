@@ -235,7 +235,7 @@ class ApplicationService {
     }
 
     const validTransitions = {
-      APPLIED: [ApplicationStatus.REVIEWING, ApplicationStatus.REJECTED],
+      APPLIED: [ApplicationStatus.REVIEWING, ApplicationStatus.SHORTLISTED, ApplicationStatus.REJECTED],
       REVIEWING: [
         ApplicationStatus.SHORTLISTED,
         ApplicationStatus.REJECTED,
@@ -284,6 +284,8 @@ class ApplicationService {
         await notificationEventHandler.handleApplicationShortlisted(base);
       } else if (newStatus === ApplicationStatus.REJECTED) {
         await notificationEventHandler.handleApplicationRejected(base);
+      } else if (newStatus === ApplicationStatus.HIRED) {
+        await notificationEventHandler.handleApplicationHired(base);
       }
     } catch (error) {
       console.error("[Application] Failed to dispatch status notification:", error.message);
@@ -319,6 +321,39 @@ class ApplicationService {
     }
 
     return application;
+  }
+
+  /**
+   * Update recruiter notes for an application (Recruiter only)
+   * 
+   * @param {string} userId - Authenticated recruiter User ID
+   * @param {string} applicationId - Application ID
+   * @param {string} notes - Recruiter notes text
+   */
+  async updateRecruiterNotes(userId, applicationId, notes) {
+    const recruiter =
+      await applicationRepository.findRecruiterProfileByUserId(userId);
+
+    if (!recruiter) {
+      throw new ApiError(404, "Recruiter profile not found.");
+    }
+
+    const application =
+      await applicationRepository.findApplicationByIdWithJobAndRecruiter(
+        applicationId
+      );
+
+    if (!application || application.job.recruiterId !== recruiter.id) {
+      throw new ApiError(
+        404,
+        "Application not found or you are not authorized to update its notes."
+      );
+    }
+
+    return applicationRepository.updateRecruiterNotes(
+      applicationId,
+      notes && notes.trim() ? notes.trim() : null
+    );
   }
 }
 

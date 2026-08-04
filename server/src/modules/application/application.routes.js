@@ -12,6 +12,8 @@ import {
   getApplicationByIdParamsSchema,
   updateApplicationStatusParamsSchema,
   updateApplicationStatusSchema,
+  updateApplicationNotesParamsSchema,
+  updateApplicationNotesSchema,
 } from "./application.validation.js";
 import {
   createApplication,
@@ -19,6 +21,7 @@ import {
   getJobApplications,
   updateApplicationStatus,
   getApplicationById,
+  updateRecruiterNotes,
 } from "./application.controller.js";
 
 const router = Router();
@@ -88,6 +91,20 @@ router.get(
   authorize("CANDIDATE", "RECRUITER"),
   validate(getApplicationByIdParamsSchema, "params"),
   getApplicationById
+);
+
+/**
+ * @route   PATCH /api/v1/applications/:id/notes
+ * @desc    Update recruiter notes on an application
+ * @access  Private (RECRUITER only)
+ */
+router.patch(
+  "/:id/notes",
+  authenticate,
+  authorize("RECRUITER"),
+  validate(updateApplicationNotesParamsSchema, "params"),
+  validate(updateApplicationNotesSchema),
+  updateRecruiterNotes
 );
 
 export default router;

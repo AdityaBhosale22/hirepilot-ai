@@ -296,6 +296,8 @@ model Application {
 
   appliedAt DateTime @default(now())
 
+  recruiterNotes String? @db.Text
+
   @@unique([candidateId, jobId])
   @@index([candidateId])
   @@index([jobId])

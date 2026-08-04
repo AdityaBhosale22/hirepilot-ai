@@ -113,6 +113,7 @@ class ApplicationRepository {
       id: true,
       status: true,
       appliedAt: true,
+      recruiterNotes: true,
       candidate: {
         select: {
           id: true,
@@ -167,9 +168,42 @@ class ApplicationRepository {
         select: {
           id: true,
           title: true,
+          originalFileName: true,
           fileUrl: true,
+          analysisStatus: true,
           aiScore: true,
           extractedSkills: true,
+          summary: true,
+          strengths: true,
+          weaknesses: true,
+          missingSkills: true,
+          recommendedSkills: true,
+          experienceLevel: true,
+          atsCompatibility: true,
+          grammarScore: true,
+          formatScore: true,
+          keywordScore: true,
+          jobReadinessScore: true,
+          careerLevel: true,
+          industryFit: true,
+        },
+      },
+      interview: {
+        select: {
+          id: true,
+          interviewType: true,
+          scheduledAt: true,
+          durationMinutes: true,
+          timezone: true,
+          meetingLink: true,
+          notes: true,
+          status: true,
+          cancelReason: true,
+          completedAt: true,
+          cancelledAt: true,
+          feedback: true,
+          score: true,
+          createdAt: true,
         },
       },
     };
@@ -472,6 +506,26 @@ class ApplicationRepository {
         status,
       },
       select: this.createdApplicationSelect,
+    });
+  }
+
+  /**
+   * Update recruiter notes on an application
+   * @param {string} id 
+   * @param {string} notes 
+   */
+  async updateRecruiterNotes(id, notes) {
+    return prisma.application.update({
+      where: {
+        id,
+      },
+      data: {
+        recruiterNotes: notes || null,
+      },
+      select: {
+        id: true,
+        recruiterNotes: true,
+      },
     });
   }
 }
