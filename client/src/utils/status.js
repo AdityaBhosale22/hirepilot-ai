@@ -55,6 +55,26 @@ export const EMPLOYMENT_TYPE = {
 export const getEmploymentTypeLabel = (type) =>
     EMPLOYMENT_TYPE[type] || type || "Full-time";
 
+export const JOB_STATUS = createStatusMap([
+    ["DRAFT", "Draft", "bg-gray-500/10 text-gray-400 border-gray-500/20"],
+    ["OPEN", "Active", "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"],
+    ["CLOSED", "Closed", "bg-red-500/10 text-red-400 border-red-500/20"],
+]);
+
+export const getJobStatusConfig = (status) =>
+    JOB_STATUS[status] || { label: status || FALLBACK_STATUS.label, className: FALLBACK_STATUS.className };
+
+export const APPLICATION_TRANSITIONS = {
+    APPLIED: ["REVIEWING", "SHORTLISTED", "REJECTED"],
+    REVIEWING: ["SHORTLISTED", "REJECTED"],
+    SHORTLISTED: ["INTERVIEW_SCHEDULED", "REJECTED"],
+    INTERVIEW_SCHEDULED: ["HIRED", "REJECTED"],
+    REJECTED: [],
+    HIRED: [],
+};
+
+export const getApplicationNextStates = (status) => APPLICATION_TRANSITIONS[status] || [];
+
 export const INTERVIEW_TYPE = {
     ONLINE: "Online",
     ONSITE: "Onsite",

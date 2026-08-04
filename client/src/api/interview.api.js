@@ -33,4 +33,46 @@ export async function getInterviewById(interviewId) {
     }
 }
 
-export default { getInterviews, getInterviewById };
+export async function scheduleInterview(payload) {
+    try {
+        const response = await api.post("/interviews", payload);
+        const data = extractData(response);
+        return data?.interview ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateInterview(interviewId, payload) {
+    try {
+        const response = await api.patch(`/interviews/${interviewId}`, payload);
+        const data = extractData(response);
+        return data?.interview ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateInterviewStatus(interviewId, payload) {
+    try {
+        const response = await api.patch(`/interviews/${interviewId}/status`, payload);
+        const data = extractData(response);
+        return data?.interview ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function cancelInterview(interviewId, cancelReason = "") {
+    try {
+        const response = await api.delete(`/interviews/${interviewId}`, {
+            data: { cancelReason },
+        });
+        const data = extractData(response);
+        return data?.interview ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export default { getInterviews, getInterviewById, scheduleInterview, updateInterview, updateInterviewStatus, cancelInterview };

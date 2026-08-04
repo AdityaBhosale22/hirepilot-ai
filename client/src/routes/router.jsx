@@ -18,7 +18,6 @@ import VerifyEmail from "../components/auth/VerifyEmail";
 import CandidateDashboard from "../pages/candidate/Dashboard";
 import RecruiterDashboard from "../pages/recruiter/Dashboard";
 import AdminDashboard from "../pages/admin/Dashboard";
-
 import CandidateJobs from "../pages/candidate/Jobs";
 import CandidateApplications from "../pages/candidate/Applications";
 import CandidateResume from "../pages/candidate/Resume";
@@ -28,6 +27,16 @@ import CandidateInterviews from "../pages/candidate/Interviews";
 import CandidateNotifications from "../pages/candidate/Notifications";
 import CandidateProfile from "../pages/candidate/Profile";
 import CandidateSettings from "../pages/candidate/Settings";
+
+import RecruiterJobs from "../pages/recruiter/Jobs";
+import RecruiterCreateJob from "../pages/recruiter/CreateJob";
+import RecruiterApplicants from "../pages/recruiter/Applicants";
+import RecruiterApplicantDetails from "../pages/recruiter/ApplicantDetails";
+import RecruiterInterviews from "../pages/recruiter/Interviews";
+import RecruiterAnalytics from "../pages/recruiter/Analytics";
+import RecruiterCompany from "../pages/recruiter/Company";
+import RecruiterNotifications from "../pages/recruiter/Notifications";
+import RecruiterSettings from "../pages/recruiter/Settings";
 
 const router = createBrowserRouter([
   {
@@ -128,6 +137,42 @@ const router = createBrowserRouter([
           {
             path: "dashboard",
             element: <RecruiterDashboard />,
+          },
+          {
+            path: "jobs",
+            element: <RecruiterJobs />,
+          },
+          {
+            path: "jobs/create",
+            element: <RecruiterCreateJob />,
+          },
+          {
+            path: "applicants",
+            element: <RecruiterApplicants />,
+          },
+          {
+            path: "applicants/:applicationId",
+            element: <RecruiterApplicantDetails />,
+          },
+          {
+            path: "interviews",
+            element: <RecruiterInterviews />,
+          },
+          {
+            path: "analytics",
+            element: <RecruiterAnalytics />,
+          },
+          {
+            path: "company",
+            element: <RecruiterCompany />,
+          },
+          {
+            path: "notifications",
+            element: <RecruiterNotifications />,
+          },
+          {
+            path: "settings",
+            element: <RecruiterSettings />,
           },
         ],
       },

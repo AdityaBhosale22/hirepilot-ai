@@ -19,4 +19,13 @@ export async function getCandidateDashboard() {
     }
 }
 
-export default { getCandidateDashboard };
+export async function getRecruiterDashboard() {
+    try {
+        const response = await api.get("/dashboard/recruiter");
+        return extractData(response);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export default { getCandidateDashboard, getRecruiterDashboard };

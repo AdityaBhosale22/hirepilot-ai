@@ -1,4 +1,3 @@
-import React from 'react';
 import RecruiterLayout from '../../components/recruiter/RecruiterLayout';
 
 export default function Settings() {

@@ -33,4 +33,47 @@ export async function getJobById(jobId) {
     }
 }
 
-export default { getPublicJobs, getJobById };
+export async function getMyJobs(params = {}) {
+    try {
+        const response = await api.get("/jobs/me", { params });
+        const data = extractData(response);
+        return {
+            jobs: data?.jobs ?? [],
+            pagination: data?.pagination ?? {},
+        };
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function createJob(payload) {
+    try {
+        const response = await api.post("/jobs", payload);
+        const data = extractData(response);
+        return data?.job ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateJob(jobId, payload) {
+    try {
+        const response = await api.patch(`/jobs/${jobId}`, payload);
+        const data = extractData(response);
+        return data?.job ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export async function updateJobStatus(jobId, status) {
+    try {
+        const response = await api.patch(`/jobs/${jobId}/status`, { status });
+        const data = extractData(response);
+        return data?.job ?? null;
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+export default { getPublicJobs, getJobById, getMyJobs, createJob, updateJob, updateJobStatus };
