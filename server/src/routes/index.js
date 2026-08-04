@@ -10,6 +10,7 @@ import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 import notificationRoutes from "../modules/notification/notification.routes.js";
 import jobMatchingRoutes from "../modules/job-matching/job-matching.routes.js"
 import resumeAiRoutes from "../modules/resume-ai/resume-ai.routes.js"
+import candidateProfileRoutes from "../modules/candidate-profile/candidate-profile.routes.js"
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/job-matching", jobMatchingRoutes);
 router.use("/resume-ai", resumeAiRoutes);
+router.use("/candidate", candidateProfileRoutes);
 
 export default router;
