@@ -9,6 +9,21 @@ import notificationEventHandler from "../notification/notification.events.js";
 import geminiService from "../../ai/gemini.service.js";
 import promptManager from "../../ai/prompt.manager.js";
 import aiLogger from "../../ai/ai.logger.js";
+import pdfExtractor from "../../ai/pdf.extractor.js";
+
+const REQUIRED_ANALYSIS_KEYS = [
+  "overallAtsScore",
+  "grammarScore",
+  "formattingScore",
+  "keywordScore",
+  "jobReadinessScore",
+  "professionalSummary",
+  "strengths",
+  "weaknesses",
+  "missingSkills",
+  "recommendedSkills",
+  "skills",
+];
 
 /**
  * Main resume analysis pipeline
@@ -26,8 +41,19 @@ export async function processResumeAnalysis(job) {
   if (!resume) {
     throw new Error(`Resume '${resumeId}' not found for analysis.`);
   }
-  if (!resume.parsedText || !resume.parsedText.trim()) {
-    throw new Error(`Resume '${resumeId}' has no extractable text. Upload the PDF again or re-run extraction.`);
+
+  // Only extracted plain text may reach Gemini. Reject empty or binary content
+  // so raw PDF bytes are never forwarded to the AI service.
+  const resumeText = resume.parsedText?.trim() || "";
+  if (!resumeText) {
+    throw new Error(
+      `Resume '${resumeId}' has no extractable text. Upload a text-based PDF resume and try again.`
+    );
+  }
+  if (!pdfExtractor.isReadableText(resumeText)) {
+    throw new Error(
+      `Resume '${resumeId}' contains unreadable binary content. Re-upload a text-based PDF resume.`
+    );
   }
 
   await resumeAiRepository.updateAnalysisStatus(resumeId, "PROCESSING", {
@@ -37,7 +63,7 @@ export async function processResumeAnalysis(job) {
   try {
     const renderedPrompt = promptManager.renderPrompt("RESUME_ANALYSIS", {
       resumeTitle: resume.title,
-      resumeText: resume.parsedText,
+      resumeText,
     });
 
     const aiResult = await geminiService.generateStructuredJSON({
@@ -46,11 +72,12 @@ export async function processResumeAnalysis(job) {
       moduleName: "RESUME_ANALYSIS",
       promptName: renderedPrompt.name,
       temperature: 0.2,
+      requiredKeys: REQUIRED_ANALYSIS_KEYS,
     });
 
     const report = aiResult.data;
 
-    await resumeAiRepository.saveAnalysisReport(resumeId, report, resume.parsedText);
+    await resumeAiRepository.saveAnalysisReport(resumeId, report, resumeText);
 
     aiLogger.logSuccess({
       moduleName: "RESUME_AI",

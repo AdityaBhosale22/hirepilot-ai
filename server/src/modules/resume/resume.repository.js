@@ -15,6 +15,7 @@ class ResumeRepository {
       isDefault: true,
       aiScore: true,
       extractedSkills: true,
+      analysisStatus: true,
       createdAt: true,
       updatedAt: true,
     };

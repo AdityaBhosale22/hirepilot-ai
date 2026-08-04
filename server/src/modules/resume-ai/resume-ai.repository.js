@@ -77,6 +77,20 @@ class ResumeAiRepository {
   }
 
   async saveAnalysisReport(resumeId, reportData, parsedText) {
+    const clampScore = (value) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return null;
+      return Math.max(0, Math.min(100, Math.round(num * 10) / 10));
+    };
+
+    const toString = (value) =>
+      typeof value === "string" && value.trim() ? value.trim() : null;
+
+    const toStringArray = (value) =>
+      Array.isArray(value)
+        ? value.filter((item) => typeof item === "string" && item.trim())
+        : [];
+
     return prisma.resume.update({
       where: { id: resumeId },
       data: {
@@ -84,21 +98,21 @@ class ResumeAiRepository {
         analysisCompletedAt: new Date(),
         lastAnalyzedAt: new Date(),
         parsedText,
-        aiScore: reportData.overallAtsScore,
-        summary: reportData.professionalSummary,
-        strengths: reportData.strengths,
-        weaknesses: reportData.weaknesses,
-        missingSkills: reportData.missingSkills,
-        recommendedSkills: reportData.recommendedSkills,
-        experienceLevel: reportData.experienceSummary,
-        atsCompatibility: reportData.atsCompatibility,
-        grammarScore: reportData.grammarScore,
-        formatScore: reportData.formattingScore,
-        keywordScore: reportData.keywordScore,
-        jobReadinessScore: reportData.jobReadinessScore,
-        careerLevel: reportData.careerLevel,
-        industryFit: reportData.industryFit,
-        extractedSkills: reportData.skills,
+        aiScore: clampScore(reportData.overallAtsScore),
+        summary: toString(reportData.professionalSummary),
+        strengths: toStringArray(reportData.strengths),
+        weaknesses: toStringArray(reportData.weaknesses),
+        missingSkills: toStringArray(reportData.missingSkills),
+        recommendedSkills: toStringArray(reportData.recommendedSkills),
+        experienceLevel: toString(reportData.experienceSummary),
+        atsCompatibility: clampScore(reportData.atsCompatibility),
+        grammarScore: clampScore(reportData.grammarScore),
+        formatScore: clampScore(reportData.formattingScore),
+        keywordScore: clampScore(reportData.keywordScore),
+        jobReadinessScore: clampScore(reportData.jobReadinessScore),
+        careerLevel: toString(reportData.careerLevel),
+        industryFit: toString(reportData.industryFit),
+        extractedSkills: toStringArray(reportData.skills),
       },
     });
   }

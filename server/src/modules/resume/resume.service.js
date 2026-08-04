@@ -42,18 +42,26 @@ class ResumeService {
 
     // Extract PDF text at upload time so downstream AI jobs (resume analysis, job matching)
     // always have resume content available without re-downloading the file.
+    // Extraction validates the output, so raw binary is never persisted as parsedText.
     let parsedText = null;
     try {
       const extraction = await pdfExtractor.extractText(file.buffer);
       parsedText = pdfExtractor.cleanExtractedText(extraction.text);
     } catch (error) {
-      console.warn(`[Resume] PDF text extraction failed for upload '${title}':`, error.message);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(
+        400,
+        `Could not extract text from the uploaded PDF: ${error.message}`
+      );
     }
 
     // Upload asset to Cloudinary storage
     const uploadResult = await uploadToCloudinary(
       file.buffer,
-      "hirepilot/resumes"
+      "hirepilot/resumes",
+      { filename: file.originalname }
     );
 
     // Persist resume record
