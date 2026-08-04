@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Briefcase,
@@ -21,7 +21,6 @@ import { getInitials } from "../../utils/format";
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: QUERY_KEYS.UNREAD_COUNT,
@@ -31,7 +30,6 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
   };
 
   const navItems = [

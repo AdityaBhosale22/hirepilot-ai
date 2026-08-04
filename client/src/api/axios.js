@@ -12,6 +12,7 @@ const api = axios.create({
 
 let accessToken = getStoredAccessToken();
 let authFailureHandler = null;
+let tokenRefreshedHandler = null;
 
 export const setAccessToken = (token) => {
     accessToken = token || null;
@@ -22,6 +23,12 @@ export const getAccessToken = () => accessToken;
 
 export const onAuthFailure = (handler) => {
     authFailureHandler = handler;
+};
+
+// Notifies the auth layer (AuthProvider) whenever an interceptor-driven token
+// refresh succeeds, so the React state stays in sync with the axios token.
+export const onTokenRefreshed = (handler) => {
+    tokenRefreshedHandler = handler;
 };
 
 // Endpoints that must NOT receive the access token (cookie-based or public).
@@ -100,15 +107,26 @@ api.interceptors.response.use(
             }
 
             setAccessToken(newToken);
+            if (tokenRefreshedHandler) {
+                tokenRefreshedHandler(newToken);
+            }
             processQueue(null, newToken);
 
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return api(originalRequest);
         } catch (refreshError) {
             processQueue(refreshError, null);
-            setAccessToken(null);
-            if (authFailureHandler) {
-                authFailureHandler();
+            const refreshStatus = refreshError?.response?.status;
+
+            // A 401/403 from /auth/refresh means the session is gone. Clear the
+            // access token and notify the auth layer so it can wipe all state.
+            // Any other failure (network/5xx) is transient and must NOT log the
+            // user out or trigger a full page redirect.
+            if (refreshStatus === 401 || refreshStatus === 403) {
+                setAccessToken(null);
+                if (authFailureHandler) {
+                    authFailureHandler();
+                }
             }
             return Promise.reject(refreshError);
         } finally {
